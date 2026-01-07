@@ -1,0 +1,11 @@
+{
+  "email_messages": {
+    "queue_name": "olushkiny_igrushki.email_messages",
+    "message_delay_time": 0,
+    "worker_count": 1,
+    "worker_param": {
+      "class_name": "EmailMessageWorkerRMQ",
+      "consume_method_is_lock": false
+    }
+  }
+}

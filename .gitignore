@@ -1,0 +1,14 @@
+# Directories
+__pycache__/
+.venv
+*.idea
+*.ruff_cache
+venv
+
+# Files
+*.py[cod]
+*.sql
+.env
+.env.docker
+.env.loc
+.queues.json

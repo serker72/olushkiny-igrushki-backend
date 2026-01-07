@@ -1,0 +1,7 @@
+{
+  "Bad Authorization header. Expected value 'Bearer <JWT>'": "Отсутствует заголовок авторизации, ожидается значение 'Bearer <JWT>'",
+  "Invalid algorithm on header": "Указан некорректный алгоритм для JWT токена",
+  "Signature has expired": "Срок действия JWT токена истек",
+  "Signature verification failed": "Ошибка проверки подписи JWT токена",
+  "Invalid crypto padding": "Указано некорректное содержимое JWT токена, невозможно выполнить проверку подписи"
+}

@@ -1,0 +1,20 @@
+{% extends "email/layout.jinja2" %}
+{% import "email/macros.jinja2" as macros %}
+
+{% block header %}
+  <div class="header-content">
+    Здравствуйте!
+  </div>
+{% endblock %}
+
+{% block message %}
+  <p>
+    Ваш код подтверждения для регистрации в сервисе "{{ system_name }}":
+  </p>
+  <p>
+    <strong style="font-size: 24px;">{{ entity.code }}</strong>
+  </p>
+  <p>
+      <strong>Никому его не сообщайте.</strong>
+  </p>
+{% endblock %}

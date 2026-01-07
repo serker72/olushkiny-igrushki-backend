@@ -1,0 +1,38 @@
+#!/bin/bash
+
+PATH='/sbin:/bin'
+
+IPTABLES=/sbin/iptables
+ETHERNET_CARD=eth0
+PORTS=(5432 6379 5672 15672)
+
+. /lib/lsb/init-functions
+
+case "$1" in
+  start)
+    echo "Add iptables rules"
+    sleep 30
+    for PORT in "${PORTS[@]}"; do
+      echo "$PORT"
+      $IPTABLES -I DOCKER-USER -i $ETHERNET_CARD -p tcp --dport $PORT -j DROP
+    done
+  ;;
+
+  stop)
+    echo "Delete iptables rules"
+    for PORT in "${PORTS[@]}"; do
+      echo "$PORT"
+      $IPTABLES -D DOCKER-USER -i $ETHERNET_CARD -p tcp --dport $PORT -j DROP
+    done
+  ;;
+
+  restart|reload|force-reload)
+    log_warning_msg "Action '$1' is meaningless for this init script"
+    exit 0
+  ;;
+
+  *)
+    log_success_msg "Usage: $0 start"
+    exit 1
+  ;;
+esac

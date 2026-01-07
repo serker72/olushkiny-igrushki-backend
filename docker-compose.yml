@@ -1,0 +1,230 @@
+services:
+  postgres:
+    image: postgres:17.5
+    container_name: olushkiny-igrushki-postgres
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_DB}::${POSTGRES_USER}::${POSTGRES_PASSWORD}|${POSTGRES_TEST_DB}::${POSTGRES_TEST_USER}::${POSTGRES_TEST_PASSWORD}
+    volumes:
+      - ${POSTGRES_DATA_DIR:-/opt/olushkiny-igrushki-data/db}:/var/lib/postgresql/data
+      - ${POSTGRES_BACKUPS_DIR:-/opt/olushkiny-igrushki-data/backups}:/var/lib/postgresql/backups
+      - ./create-multiple-postgresql-databases.sh:/docker-entrypoint-initdb.d/create-multiple-postgresql-databases.sh
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+
+  redis:
+    image: redis:8.0.2-bookworm
+    container_name: olushkiny-igrushki-redis
+    ports:
+      - "0.0.0.0:6379:6379"
+    volumes:
+      - ${REDIS_DATA_DIR:-/opt/olushkiny-igrushki-data/redis}:/data
+    command: /bin/sh -c "redis-server --requirepass '${REDIS_PASSWORD}'"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 30s
+    restart: always
+
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.24.1-p1
+    container_name: olushkiny-igrushki-pgbouncer
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./config_services/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./config_services/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    healthcheck:
+      test: [ 'CMD', 'pg_isready', '-h', 'localhost' ]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  rabbitmq:
+    build:
+      context: ./config_services/rabbitmq
+      dockerfile: ./Dockerfile
+    image: 'olushkiny-igrushki-rabbitmq:4-management-alpine'
+#    image: rabbitmq:4-management-alpine
+    container_name: olushkiny-igrushki-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    ports:
+      - "0.0.0.0:5672:5672"
+      - "0.0.0.0:15672:15672"
+    volumes:
+      - ${RABBITMQ_DATA_DIR:-/opt/olushkiny-igrushki-data/rabbitmq}:/var/lib/rabbitmq/
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    restart: always
+
+  angie:
+    image: docker.angie.software/angie:1.10.3-templated
+    container_name: olushkiny-igrushki-angie
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      ANGIE_LOAD_MODULES: ${ANGIE_LOAD_MODULES}
+      PROJECT_DOMAIN: ${PROJECT_DOMAIN:-olushkiny-igrushki.ru}
+      BACKEND_HOST: ${BACKEND_HOST:-host.docker.internal}
+      BACKEND_PORT: ${BACKEND_PORT:-8000}
+      FRONTEND_PORT: ${FRONTEND_PORT:-3000}
+      AIRFLOW_WWW_PORT: ${AIRFLOW_WWW_PORT:-8080}
+      THUMBOR_PORT: ${THUMBOR_PORT:-80}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_CONSOLE_PORT: ${MINIO_CONSOLE_PORT:-9001}
+      RABBITMQ_CONSOLE_PORT: ${RABBITMQ_CONSOLE_PORT:-15672}
+    ports:
+      - "80:80"
+    volumes:
+      - ./config_services/angie/templates/${PROJECT_ENVIRONMENT:-prod}:/etc/angie/templates/http.d:ro
+      - ./config_services/angie/proxy_params:/etc/angie/proxy_params:ro
+      - ./config_services/angie/proxy_websocket_params:/etc/angie/proxy_websocket_params:ro
+      - ${ANGIE_LOG_DIR}:/var/log/angie
+      - ${BACKEND_MEDIA_LOCAL_PATH}:/app-backend/media
+      - ${BACKEND_STATIC_LOCAL_PATH}:/app-backend/static
+    command: [angie, '-g', 'daemon off;']
+    restart: always
+
+  redis-insight:
+    image: redis/redisinsight:2.70
+    container_name: olushkiny-igrushki-redis-insight
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      RI_REDIS_HOST: ${REDIS_HOST:-redis}
+      RI_REDIS_PORT: ${REDIS_PORT:-6379}
+      RI_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis}
+    ports:
+      - "${RI_APP_PORT:-5540}:5540"
+    volumes:
+      - ${RI_REDIS_DATA_DIR}:/data
+    restart: always
+    profiles:
+      - redis-insight
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: olushkiny-igrushki-minio
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USERNAME:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minio}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ${MINIO_DATA_DIR}:/data
+    command: server /data --console-address ":9001"
+    restart: always
+
+  thumbor:
+    image: ghcr.io/beeyev/thumbor-s3:7-debian
+    container_name: olushkiny-igrushki-thumbor
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8888:8888"
+    environment:
+      THUMBOR_NUM_PROCESSES: "${THUMBOR_NUM_PROCESSES:-4}"
+      LOG_LEVEL: "${THUMBOR_LOG_LEVEL:-warning}"
+
+      LOADER: "${THUMBOR_LOADER:-thumbor_aws.loader}"
+      AWS_LOADER_REGION_NAME: "${THUMBOR_AWS_LOADER_REGION_NAME:-local}"
+      AWS_LOADER_BUCKET_NAME: "${THUMBOR_AWS_LOADER_BUCKET_NAME:-images}"
+      AWS_LOADER_S3_ACCESS_KEY_ID: "${MINIO_USERNAME:-minio}"
+      AWS_LOADER_S3_SECRET_ACCESS_KEY: "${MINIO_PASSWORD:-minio}"
+      AWS_LOADER_S3_ENDPOINT_URL: "http://minio:9000/"
+      ## Define prefix for S3 buckets if needed
+      #- 'AWS_LOADER_ROOT_PATH=/st'
+
+      RESULT_STORAGE: "${THUMBOR_RESULT_STORAGE:-thumbor_aws.result_storage}"
+      AWS_RESULT_STORAGE_BUCKET_NAME: "${THUMBOR_AWS_RESULT_STORAGE_BUCKET_NAME:-images-cache}"
+      AWS_RESULT_STORAGE_S3_ACCESS_KEY_ID: "${MINIO_USERNAME:-minio}"
+      AWS_RESULT_STORAGE_S3_SECRET_ACCESS_KEY: "${MINIO_PASSWORD:-minio}"
+      AWS_RESULT_STORAGE_S3_ENDPOINT_URL: "http://minio:9000/"
+      ## Define prefix for S3 buckets if needed
+      #- 'AWS_RESULT_STORAGE_ROOT_PATH=/rs'
+
+      RESULT_STORAGE_STORES_UNSAFE: "${THUMBOR_RESULT_STORAGE_STORES_UNSAFE:-False}"
+      ALLOW_UNSAFE_URL: "${THUMBOR_ALLOW_UNSAFE_URL:-False}"
+      SECURITY_KEY: "${THUMBOR_SECURITY_KEY}"
+
+      # Expiration in seconds of generated images in the result storage. (2629746 is a month is seconds)
+      RESULT_STORAGE_EXPIRATION_SECONDS: "${THUMBOR_RESULT_STORAGE_EXPIRATION_SECONDS:-2629746}"
+      QUALITY: "${THUMBOR_QUALITY:-80}"
+      RESPECT_ORIENTATION: "${THUMBOR_RESPECT_ORIENTATION:-True}"
+
+      # Max AGE sent as a header for the image served by thumbor in seconds (86400 is a day of caching)
+      MAX_AGE: "${THUMBOR_MAX_AGE:-86400}"
+      AUTO_PNG_TO_JPG: "${THUMBOR_AUTO_PNG_TO_JPG:-False}"
+      HTTP_LOADER_VALIDATE_CERTS: "${THUMBOR_HTTP_LOADER_VALIDATE_CERTS:-False}"
+    depends_on:
+      - minio
+    volumes:
+      - ${THUMBOR_DATA_DIR}:/data
+    restart: always
+
+  app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: olushkiny-igrushki-backend:latest
+    container_name: olushkiny-igrushki-backend-app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    env_file:
+      - ./.env
+    volumes:
+      - .:/app
+      - ${BACKEND_KEY_PAIR_LOCAL_PATH}:${BACKEND_KEY_PAIR_PATH}
+      - ${BACKEND_LOG_LOCAL_PATH}:${BACKEND_LOG_PATH}
+      - ${BACKEND_MEDIA_LOCAL_PATH}:${BACKEND_MEDIA_PATH}
+      - ${BACKEND_STATIC_LOCAL_PATH}:${BACKEND_STATIC_PATH}
+#    command: /bin/sh -c "while sleep 1000; do :; done"
+#    command: /bin/sh -c "uvicorn --host 0.0.0.0 --port ${BACKEND_PORT} --workers ${BACKEND_WORKER_COUNT} --loop uvloop app_backend.main:app"
+    command: /bin/sh -c "uvicorn --host 0.0.0.0 --port ${BACKEND_PORT} --loop uvloop ${BACKEND_CONTAINER_COMMAND} app_backend.main:app"
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:${BACKEND_PORT}${BACKEND_API_PREFIX}/systems/info" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+
+  app-queue-processing:
+    image: olushkiny-igrushki-backend:latest
+    container_name: olushkiny-igrushki-queue-processing
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - ./.env
+    volumes:
+      - ./:/app
+      - ${BACKEND_KEY_PAIR_LOCAL_PATH}:${BACKEND_KEY_PAIR_PATH}
+      - ${BACKEND_LOG_LOCAL_PATH}:${BACKEND_LOG_PATH}
+      - ${BACKEND_MEDIA_LOCAL_PATH}:${BACKEND_MEDIA_PATH}
+      - ${BACKEND_STATIC_LOCAL_PATH}:${BACKEND_STATIC_PATH}
+    command: /bin/sh -c "python app_queue_processing/main.py"
+    restart: always

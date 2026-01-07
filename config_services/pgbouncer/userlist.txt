@@ -1,0 +1,4 @@
+"postgres" "olushkiny_igrushki"
+"airflow" "olushkiny_igrushki"
+"olushkiny_igrushki" "olushkiny_igrushki"
+"olushkiny_igrushki_test" "olushkiny_igrushki"
