@@ -1,0 +1,9 @@
+<div class="table-responsive mt-3">
+    <table class="table table-hover">
+        {% for column in columns %}
+            <tr>
+                <th>{{ column.title|safe }}</th><td>{% include "page/common/blocks/_column.html" %}</td>
+            </tr>
+        {% endfor %}
+    </table>
+</div>

@@ -256,3 +256,19 @@ class UserAuthorizationCodeCase(Case):
     plural_accusative = "Коды подтверждения авторизации"
     plural_instrumental = "Кодами подтверждения авторизации"
     plural_prepositional = "Кодах подтверждения авторизации"
+
+
+class CategoryCase(Case):
+    nominative = "Категория"
+    genitive = "Категории"
+    dative = "Категории"
+    accusative = "Категорию"
+    instrumental = "Категорией"
+    prepositional = "Категории"
+
+    plural_nominative = "Категории"
+    plural_genitive = "Категорий"
+    plural_dative = "Категориям"
+    plural_accusative = "Категории"
+    plural_instrumental = "Категориями"
+    plural_prepositional = "Категориях"

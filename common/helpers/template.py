@@ -2,15 +2,24 @@ import string
 from datetime import datetime
 from os import makedirs
 from os.path import join
+from typing import Any
+from urllib.parse import ParseResult, parse_qs, urlencode, urlparse, urlunparse
 
 import openpyxl
+from fastapi import Request
+from jinja2 import Template, pass_context
+from jinja2.runtime import Context
 from loguru import logger
+from markupsafe import Markup
+from starlette.datastructures import URL
+from starlette.routing import NoMatchFound
 from xlsxtpl.writerx import BookWriter
 
 from common.exceptions import ConflictException, UnprocessableEntityException
 from common.helpers.exception import get_traceback
 from common.helpers.file import check_directory_exists
 from common.models.base import Base
+from common.schemas.models.settings import settings
 
 
 def validate_notification_template(template_data: dict, entity: Base = None) -> list[None | datetime] | None:
@@ -167,3 +176,102 @@ def set_height_row(file_path: str):
                     max_height = max(max_height, height)
             ws.row_dimensions[row[0].row].height = max_height
     wb.save(file_path)
+
+
+def build_missing_route_url(request: Request, name: str, path_params: dict) -> str:
+    """Построение полного URL для отсутствующих маршрутов"""
+    parsed_base_url = urlparse(settings.backend_base_url)
+
+    if name.startswith("http"):
+        parsed_url = urlparse(name)
+    else:
+        _name = name.replace(".", "/")
+
+        if _name.endswith("_page"):
+            _name = _name[:-5]
+
+        if _name.endswith("home"):
+            _name = _name[:-4]
+
+        # parsed_url.path = "/" + _name if not _name.startswith("/") else _name
+
+        parsed_url = ParseResult(
+            scheme=request.url.scheme,
+            netloc=request.url.netloc,
+            # path=request.url.path,
+            path="/" + _name if not _name.startswith("/") else _name,
+            params="",
+            query=request.url.query,
+            fragment=request.url.fragment,
+        )
+
+    path = (
+        parsed_url.path + "/" + path_params.pop("path").lstrip("/")
+        if path_params.get("path") is not None
+        else parsed_url.path
+    )
+    params = str(path_params.pop("params", ""))
+
+    is_ignored_query_params = path_params.pop("is_ignored_query_params", False)
+
+    if len(path_params) > 0:
+        query_params = parse_qs(parsed_url.query) if is_ignored_query_params is False else {}
+        query_params.update(path_params)
+        updated_query_string = urlencode(query_params, doseq=True)
+    else:
+        updated_query_string = ""
+
+    updated_url = urlunparse(
+        (
+            parsed_base_url.scheme,
+            parsed_url.netloc,
+            path,
+            params,
+            updated_query_string,
+            parsed_url.fragment,
+        )
+    )
+
+    return str(updated_url)
+
+
+@pass_context
+def url_for(context: dict[str, Any], name: str, **path_params: Any) -> URL | str:
+    """Построение полного URL для использования в шаблонах Jinja2"""
+    request: Request = context["request"]
+    filename = path_params.pop("filename", None)
+    path = path_params.pop("path", None)
+
+    if filename is not None or path is not None:
+        path_params["path"] = filename or path
+
+    try:
+        # return request.url_for(name, **path_params)
+        route_url = request.url_for(name, **path_params)
+        parsed_route_url = urlparse(str(route_url))
+        parsed_base_url = urlparse(settings.backend_base_url)
+
+        updated_url = urlunparse(
+            (
+                parsed_base_url.scheme,
+                parsed_route_url.netloc,
+                parsed_route_url.path,
+                parsed_route_url.params,
+                parsed_route_url.query,
+                parsed_route_url.fragment,
+            )
+        )
+
+        return str(updated_url)
+    except NoMatchFound:
+        return build_missing_route_url(request, name, path_params)
+
+
+@pass_context
+def virtual_column(context: Context, value: str, item: Any):
+    return Markup(Template(value).render({"item": item})).format()
+
+
+@pass_context
+def virtual_column_with_context(context: Context, value: str):
+    return Markup(Template(value).render(context)).format()

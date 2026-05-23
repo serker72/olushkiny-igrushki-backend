@@ -5,6 +5,7 @@ from .base import (
     BaseRetrieveResponse,
     CustomJSONResponse,
 )
+from .categories import CategoryRetrieveCollectionPaginateResponse, CategoryRetrieveResponse
 from .files import FileRetrieveResponse
 from .jwt import JwtTokenRefreshResponse
 from .modules import ModuleRetrieveCollectionResponse, ModuleRetrieveResponse
@@ -25,6 +26,8 @@ __all__ = [
     "BaseRetrieveCollectionPaginateResponse",
     "BaseRetrieveCollectionResponse",
     "BaseRetrieveResponse",
+    "CategoryRetrieveCollectionPaginateResponse",
+    "CategoryRetrieveResponse",
     "CustomJSONResponse",
     "FileRetrieveResponse",
     "JwtTokenRefreshResponse",

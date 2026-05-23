@@ -1,9 +1,11 @@
 from inspect import stack
 
-from classy_fastapi import Routable, post
+from classy_fastapi import Routable, get, post
 from fastapi import Request, Response, status
+from fastapi.responses import HTMLResponse
+from loguru import logger
 
-from app_backend.routers.base import BaseRouter
+from app_backend.routers.base import BaseRouter, BaseUIRouter
 from app_backend.services.base import BaseServiceType
 from common.exceptions import get_responses
 from common.helpers import constants as c
@@ -33,6 +35,24 @@ class AuthRouter(BaseRouter, Routable):
     is_security_dependency = False
     security_dependency_endpoints = ["/sign-out"]
 
+    def response_with_access_token_cookie(
+        self,
+        user_service: BaseServiceType,
+        access_token: JwtTokenModel | None,
+        response: CustomJSONResponse | Response,
+    ) -> CustomJSONResponse:
+        """Установка cookie access_token для ответа"""
+        response.set_cookie(
+            key=user_service.settings.authjwt_access_cookie_key,
+            value=access_token.token if access_token else "",
+            httponly=True,
+            secure=user_service.settings.authjwt_cookie_secure,
+            samesite="lax",
+            max_age=user_service.settings.authjwt_access_token_expires,
+            domain=f".{user_service.settings.authjwt_cookie_domain}",
+        )
+        return response
+
     def response_with_refresh_token_cookie(
         self,
         user_service: BaseServiceType,
@@ -41,7 +61,7 @@ class AuthRouter(BaseRouter, Routable):
     ) -> CustomJSONResponse:
         """Установка cookie refresh_token для ответа"""
         response.set_cookie(
-            key="levelcraft_refresh_token",
+            key=user_service.settings.authjwt_refresh_cookie_key,
             value=refresh_token.token if refresh_token else "",
             httponly=True,
             secure=user_service.settings.authjwt_cookie_secure,
@@ -80,11 +100,17 @@ class AuthRouter(BaseRouter, Routable):
         item, access_token, refresh_token = await user_service.sign_in(request_data)
         result = UserSignInResponse(
             user=item,
-            access_token=access_token,
+            # access_token=access_token,
+            access_token=JwtTokenInfoModel(jti=access_token.jti, exp=access_token.exp),
             refresh_token=JwtTokenInfoModel(jti=refresh_token.jti, exp=refresh_token.exp),
         )
         response = CustomJSONResponse(status_code=status.HTTP_200_OK, content=result.model_dump())
-        return self.response_with_refresh_token_cookie(user_service, refresh_token, response)
+        # return self.response_with_refresh_token_cookie(user_service, refresh_token, response)
+        return self.response_with_refresh_token_cookie(
+            user_service,
+            refresh_token,
+            self.response_with_access_token_cookie(user_service, access_token, response),
+        )
 
     # @post(
     #     "/sign-up-request-code",
@@ -146,15 +172,22 @@ class AuthRouter(BaseRouter, Routable):
         response = CustomJSONResponse(
             status_code=status.HTTP_200_OK,
             content=JwtTokenRefreshResponse(
-                access_token=access_token,
+                # access_token=access_token,
+                access_token=(JwtTokenInfoModel(jti=access_token.jti, exp=access_token.exp)),
                 refresh_token=(JwtTokenInfoModel(jti=refresh_token.jti, exp=refresh_token.exp)),
             ),
         )
 
         if isinstance(refresh_token, JwtTokenModel):
-            return self.response_with_refresh_token_cookie(user_service, refresh_token, response)
+            # return self.response_with_refresh_token_cookie(user_service, refresh_token, response)
+            return self.response_with_refresh_token_cookie(
+                user_service,
+                refresh_token,
+                self.response_with_access_token_cookie(user_service, access_token, response),
+            )
 
-        return response
+        # return response
+        return self.response_with_access_token_cookie(user_service, access_token, response)
 
     @post(
         "/sign-out",
@@ -167,3 +200,23 @@ class AuthRouter(BaseRouter, Routable):
         await user_service.sign_out(request.state.verified_token)
         response = Response(status_code=status.HTTP_204_NO_CONTENT)
         return self.response_with_refresh_token_cookie(user_service, None, response)
+
+
+class AuthUIRouter(BaseUIRouter, Routable):
+    """Класс представления UI для регистрации и авторизации пользователей"""
+
+    prefix = "/auth"
+    tags = ["Регистрация и авторизация пользователей"]
+    is_security_dependency = False
+
+    @property
+    def template_aliases(self) -> dict:
+        """Словарь соответствия алиасов и имен файлов шаблонов"""
+        return {
+            "sign_in": "page/auth.html",
+        }
+
+    @get("/sign-in")
+    async def sign_in(self, request: Request) -> HTMLResponse:
+        """Получение страницы авторизации пользователя"""
+        return await self.build_template_response(request, "sign_in", {})

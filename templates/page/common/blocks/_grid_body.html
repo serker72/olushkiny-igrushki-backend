@@ -1,0 +1,63 @@
+{% for item in items %}
+<tr>
+    {% for column in columns %}
+    <td {% if column.col_type == 'currency' %}class="text-end "{% endif %}>
+        {% include "page/common/blocks/_column.html" %}
+    </td>
+    {% endfor %}
+
+    {% if is_updated or is_view_in_modal or is_view or is_view_and_updated or is_deleted %}
+    <td>
+        {% if is_view_and_updated %}
+            <a class="cbw" target="_blank" href="{{ view_and_update_page_url }}?entity_id={{ item.id }}&is_partial_template={{ is_partial_template }}">
+                <button class="btn btn-sm btn-outline-primary">Управление</button>
+            </a>
+        {% else %}
+            {% if is_updated %}
+                <a class="cbw" href="#">
+                    <button class="btn btn-sm btn-outline-success modal-open-create update-object"
+                            data-url="{{ update_page_url }}?entity_id={{ item.id }}&is_partial_template={{ is_partial_template }}"
+                            data-submit-url="{{ update_api_url }}?entity_id={{ item.id }}&is_partial_template={{ is_partial_template }}"
+                            data-index-url="{% if is_partial_template %}{{ parent_entity_view_and_update_page_url }}{% else %}{{ list_page_url }}{% endif %}"
+                            data-modal-header="{{ titles.headers.page_update }}"
+                    >
+                        Изменить
+                    </button>
+                </a>
+            {% endif %}
+
+            {% if is_view_in_modal %}
+                <a class="cbw" href="#">
+                    <button class="btn btn-sm btn-outline-primary modal-open-create update-object"
+                            data-url="{{ view_in_modal_page_url }}?entity_id={{ item.id }}"
+                            data-modal-header="{{ titles.headers.page_view }} #{{ item.id }}"
+                    >
+                        Просмотр
+                    </button>
+                </a>
+            {% elif is_view %}
+                <a class="cbw"
+                   target="_blank"
+                   href="{% if is_partial_template %}{{ view_page_url }}?entity_id={{ item.id }}&is_ignored_query_params=true }}{% else %}{{ view_page_url }}?entity_id={{ item.id }}{% endif %}"
+                >
+                    <button class="btn btn-sm btn-outline-primary">Просмотр</button>
+                </a>
+            {% endif %}
+        {% endif %}
+
+        {% if is_deleted and item|attr('is_delete') is sameas true %}
+            <a class="cbw" href="#">
+                <button class="btn btn-sm btn-outline-danger modal-open-create delete-object"
+                        data-submit-url="{{ delete_api_url }}?entity_id={{ item.id }}&is_partial_template={{ is_partial_template }}"
+                        data-index-url="{% if is_partial_template %}{{ parent_entity_view_and_update_page_url }}{% else %}{{ list_page_url }}{% endif %}"
+                        data-modal-header="{{ titles.headers.page_delete }}"
+                        data-modal-body="Удалить запись с ID {{ item.id }} ?"
+                >
+                    Удалить
+                </button>
+            </a>
+        {% endif %}
+    </td>
+    {% endif %}
+</tr>
+{% endfor %}

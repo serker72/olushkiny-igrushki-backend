@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Авторизация | {{ settings.backend_system_name }} | {{ settings.backend_server_name }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--favicon-->
+    <link rel="icon" href="/static/images/favicon.ico" type="image/icn"/>
+    <!-- Bootstrap CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/auth.css" rel="stylesheet">
+</head>
+<body>
+<div class="container-fluid mt-5">
+    <div class="row justify-content-center">
+        <div class="col-6">
+            <div class="card">
+                <div class="card-header">
+                    Авторизация пользователя
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-4">
+                            <img src="/static/images/favicon-256x256.png" class="img-fluid" alt="...">
+                        </div>
+                        <div class="col-8">
+                            <div class="alert alert-danger d-none" id="request-error"></div>
+                            <form id="sign-in-form">
+                                <fieldset>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Адрес E-Mail</label>
+                                    <input type="email" class="form-control" id="email"
+                                           placeholder="Укажите адрес E-Mail" required>
+                                    <div id="email-feedback" class="invalid-feedback">
+                                        Введите правильный адрес E-Mail
+                                    </div>
+                                    <input type="hidden" id="time_zone"/>
+                                    <input type="hidden" id="user_device_id"/>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="otp-field-1" class="form-label">Код подтверждения</label>
+                                    <div class="otp-field mb-4">
+                                        <input type="text" id="otp-field-1" data-next="otp-field-2" maxlength="1"
+                                               disabled/>
+                                        <input type="text" id="otp-field-2" data-next="otp-field-3"
+                                               data-previous="otp-field-1" maxlength="1" disabled/>
+                                        <input type="text" id="otp-field-3" data-next="otp-field-4"
+                                               data-previous="otp-field-2" maxlength="1" disabled/>
+                                        <input type="text" id="otp-field-4" data-next="otp-field-5"
+                                               data-previous="otp-field-3" maxlength="1" disabled/>
+                                        <input type="text" id="otp-field-5" data-next="otp-field-6"
+                                               data-previous="otp-field-4" maxlength="1" disabled/>
+                                        <input type="text" id="otp-field-6" data-previous="otp-field-5" maxlength="1"
+                                               disabled/>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <button type="button" id="sign-in-request-code" class="btn btn-primary">
+                                        Получить код
+                                    </button>
+                                    <button type="button" id="sign-in" class="btn btn-success" disabled>
+                                        Отправить код
+                                    </button>
+                                </div>
+                                <div class="mb-3">
+                                    <button type="button" id="sign-in-request-code-repeat" class="btn btn-info" disabled>
+                                        Новый код
+                                    </button>
+                                    <button type="button" id="sign-in-change-email" class="btn btn-success" disabled>
+                                        Новый E-Mail
+                                    </button>
+                                </div>
+                                </fieldset>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JScript -->
+<script src="/static/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/jquery-4.0.0.min.js"></script>
+<script src="/static/js/moment-with-locales.min.js"></script>
+<script src="/static/js/moment-timezone-with-data.min.js"></script>
+<script src="/static/js/thumbmark.umd.js"></script>
+<script src="/static/js/auth.js"></script>
+<script>
+    let backend_api_prefix = '{{ settings.backend_api_prefix }}'
+</script>
+</body>
+</html>

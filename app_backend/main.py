@@ -14,7 +14,7 @@ from fastapi.openapi.docs import (
     get_swagger_ui_html,
     get_swagger_ui_oauth2_redirect_html,
 )
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import HTTPBearer
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -22,9 +22,11 @@ from libre_fastapi_jwt import AuthJWT, AuthJWTBearer
 from libre_fastapi_jwt.exceptions import AuthJWTException
 from loguru import logger
 from pydantic import ValidationError
+from starlette.middleware.sessions import SessionMiddleware
+from starlette_wtf import CSRFProtectMiddleware
 
 from app_backend.dependencies import security
-from app_backend.routers import BaseRouter
+from app_backend.routers import BaseRouter, BaseUIRouter
 from app_backend.services.base import ServiceManager
 from common.exceptions import (
     BackendException,
@@ -62,9 +64,12 @@ logger.debug(f"translation_loaders: {repr(translation_loaders)}")
 
 # Список публичных методов
 public_endpoints = [
-    f"{settings.backend_api_prefix}/docs",
-    f"{settings.backend_api_prefix}/redoc",
-    f"{settings.backend_api_prefix}/openapi.json",
+    "/docs",
+    "/redoc",
+    "/openapi.json",
+    # f"{settings.backend_api_prefix}/docs",
+    # f"{settings.backend_api_prefix}/redoc",
+    # f"{settings.backend_api_prefix}/openapi.json",
 ]
 
 # Список методов, требующих JWT refresh_token
@@ -75,19 +80,25 @@ refresh_token_endpoints = [
 # Список методов, не требующих кеширования
 not_cached_endpoints = [
     "/",
-    f"{settings.backend_api_prefix}/",
-    f"{settings.backend_api_prefix}/docs",
-    f"{settings.backend_api_prefix}/redoc",
-    f"{settings.backend_api_prefix}/openapi.json",
+    "/docs",
+    "/redoc",
+    "/openapi.json",
+    # f"{settings.backend_api_prefix}/",
+    # f"{settings.backend_api_prefix}/docs",
+    # f"{settings.backend_api_prefix}/redoc",
+    # f"{settings.backend_api_prefix}/openapi.json",
 ]
 
 # Список методов, не требующих подключения к БД
 without_database_endpoints = [
     "/",
-    f"{settings.backend_api_prefix}/",
-    f"{settings.backend_api_prefix}/docs",
-    f"{settings.backend_api_prefix}/redoc",
-    f"{settings.backend_api_prefix}/openapi.json",
+    "/docs",
+    "/redoc",
+    "/openapi.json",
+    # f"{settings.backend_api_prefix}/",
+    # f"{settings.backend_api_prefix}/docs",
+    # f"{settings.backend_api_prefix}/redoc",
+    # f"{settings.backend_api_prefix}/openapi.json",
 ]
 
 
@@ -130,7 +141,7 @@ auth_dep = AuthJWTBearer()
 app = FastAPI(
     title="OlushkinyIgrushki",
     default_response_class=CustomJSONResponse,
-    root_path=settings.backend_api_prefix,
+    # root_path=settings.backend_api_prefix,
     lifespan=app_lifespan,
     docs_url=None,
     redoc_url=None,
@@ -144,6 +155,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(SessionMiddleware, secret_key=settings.backend_secret_key, session_cookie="sess")
+app.add_middleware(CSRFProtectMiddleware, csrf_secret=settings.backend_csrf_protec_secret_key)
 
 app.mount("/static", StaticFiles(directory="app_backend/static"), name="static")
 
@@ -165,8 +179,15 @@ service_manager = ServiceManager(settings=settings, templates=templates, jwt_aut
     - `True` - все маршруты будут требовать указание JWT токена
     - `False` - все маршруты, которые не указаны в `security_dependency_endpoints`, являются общедоступными
 """
-for router_class in BaseRouter.__subclasses__():
-    router = router_class(service_manager)
+for router_class in list(BaseRouter.__subclasses__() + BaseUIRouter.__subclasses__()):
+    logger.debug(f"router_class: {repr(router_class.__name__)}")
+    # logger.debug(f"router_class.__bases__: {repr(router_class.__bases__)}")
+    logger.debug(f"router_class.__bases__ is BaseUIRouter: {repr(issubclass(router_class, BaseUIRouter))}")
+    router_kwargs = {"settings": settings}
+    if issubclass(router_class, BaseUIRouter):
+        router_kwargs["templates"] = templates
+
+    router = router_class(service_manager, **router_kwargs)
 
     # Добавление списка методов, не требующих кеширования
     if isinstance(router.not_cached_endpoints, list) and len(router.not_cached_endpoints) > 0:
@@ -188,18 +209,27 @@ for router_class in BaseRouter.__subclasses__():
         ):
             route.dependencies = [Depends(security)]
 
-        if (
-            not any([isinstance(dependency.dependency, HTTPBearer) for dependency in route.dependencies])
-            and f"{settings.backend_api_prefix}{route.path}" not in refresh_token_endpoints
+        # if not any([isinstance(dependency.dependency, HTTPBearer) for dependency in route.dependencies]) and (
+        if not any([isinstance(dependency.dependency, AuthJWTBearer) for dependency in route.dependencies]) and (
+            f"{'' if issubclass(router_class, BaseUIRouter) else settings.backend_api_prefix}{route.path}"
+            not in refresh_token_endpoints
         ):
-            public_endpoints.append(f"{settings.backend_api_prefix}{route.path}")
+            public_endpoints.append(
+                f"{'' if issubclass(router_class, BaseUIRouter) else settings.backend_api_prefix}{route.path}"
+            )
+
+        logger.debug(f"router_class: {repr(router_class.__name__)}, route.dependencies: {repr(route.dependencies)}")
 
     # Добавление маршрутов представления в список маршрутов приложения
-    app.include_router(router.router)
+    app.include_router(
+        router.router,
+        prefix="" if issubclass(router_class, BaseUIRouter) else settings.backend_api_prefix,
+    )
 
 logger.debug(f"public_endpoints={repr(public_endpoints)}")
 logger.debug(f"not_cached_endpoints={repr(not_cached_endpoints)}")
 logger.debug(f"without_database_endpoints={repr(without_database_endpoints)}")
+logger.debug(f"app.routes={repr(app.routes)}")
 
 
 async def verify_token(
@@ -209,7 +239,7 @@ async def verify_token(
     verified_token = auth_jwt.get_raw_jwt(encoded_token)
     logger.debug(f"verified_token: {repr(verified_token)}")
 
-    if verified_token["type"] != required_token_type:
+    if not verified_token or verified_token["type"] != required_token_type:
         raise ForbiddenException(code=f"jwt_{required_token_type}_required")
 
     user_ip = get_client_ip_from_fastapi_request(request)
@@ -439,20 +469,29 @@ async def jwt_token_middleware(request: Request, call_next):
         logger.info("JWT: public endpoint")
         return await call_next(request)
 
+    if request.method.lower() == "options":
+        logger.info("JWT: OPTIONS method")
+        return await call_next(request)
+
     try:
         if request.url.path in refresh_token_endpoints:
             auth_jwt = auth_dep()
             required_token_type = c.JWT_REFRESH_TOKEN_TYPE
             encoded_token = request.cookies.get(settings.authjwt_refresh_cookie_key)
         else:
-            auth_jwt = auth_dep(req=request)
+            # auth_jwt = auth_dep(req=request)
+            auth_jwt = auth_dep()
             required_token_type = c.JWT_ACCESS_TOKEN_TYPE
-            encoded_token = None
+            # encoded_token = None
+            encoded_token = request.cookies.get(settings.authjwt_access_cookie_key)
 
         user, verified_token = await verify_token(request, auth_jwt, required_token_type, encoded_token)
     except AuthJWTException as e:
         trace = get_traceback(e)
         logger.error(f"JWT: get token error {repr(e.__dict__)}\n{trace}")
+        if not str(request.url).startswith(settings.backend_api_prefix):
+            return RedirectResponse("/auth/sign-in")
+
         return CustomJSONResponse(
             status_code=UnauthorizedException.status_code,
             content=(
@@ -468,6 +507,9 @@ async def jwt_token_middleware(request: Request, call_next):
     except Exception as e:
         trace = get_traceback(e)
         logger.error(f"JWT: undefined error {repr(e.__dict__)}\n{trace}")
+        if not str(request.url).startswith(settings.backend_api_prefix):
+            return RedirectResponse("/auth/sign-in")
+
         if isinstance(e, BackendException):
             return CustomJSONResponse(content=e.get_content().model_dump(), status_code=e.status_code)
 
@@ -560,13 +602,22 @@ async def validation_exception_handler(
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():
     """Генерация документации Swagger UI с использованием статических файлов"""
+    # return get_swagger_ui_html(
+    #     openapi_url=f"{settings.backend_api_prefix}/openapi.json",
+    #     title=app.title + " - Swagger UI",
+    #     oauth2_redirect_url=f"{settings.backend_api_prefix}/docs/oauth2-redirect",
+    #     swagger_js_url=f"{settings.backend_api_prefix}/static/js/swagger-ui-bundle.js",
+    #     swagger_css_url=f"{settings.backend_api_prefix}/static/css/swagger-ui.css",
+    #     swagger_favicon_url=f"{settings.backend_api_prefix}/static/images/fastapi-favicon.png",
+    #     swagger_ui_parameters={"displayRequestDuration": True},
+    # )
     return get_swagger_ui_html(
-        openapi_url=f"{settings.backend_api_prefix}/openapi.json",
+        openapi_url="/openapi.json",
         title=app.title + " - Swagger UI",
-        oauth2_redirect_url=f"{settings.backend_api_prefix}/docs/oauth2-redirect",
-        swagger_js_url=f"{settings.backend_api_prefix}/static/js/swagger-ui-bundle.js",
-        swagger_css_url=f"{settings.backend_api_prefix}/static/css/swagger-ui.css",
-        swagger_favicon_url=f"{settings.backend_api_prefix}/static/images/fastapi-favicon.png",
+        oauth2_redirect_url="/docs/oauth2-redirect",
+        swagger_js_url="/static/js/swagger-ui-bundle.js",
+        swagger_css_url="/static/css/swagger-ui.css",
+        swagger_favicon_url="/static/images/fastapi-favicon.png",
         swagger_ui_parameters={"displayRequestDuration": True},
     )
 
@@ -580,11 +631,18 @@ async def swagger_ui_redirect() -> HTMLResponse:
 @app.get("/redoc", include_in_schema=False)
 async def redoc_html():
     """Генерация документации Redoc с использованием статических файлов"""
+    # return get_redoc_html(
+    #     openapi_url=f"{settings.backend_api_prefix}/openapi.json",
+    #     title=app.title + " - ReDoc",
+    #     redoc_js_url=f"{settings.backend_api_prefix}/static/js/redoc.standalone.js",
+    #     redoc_favicon_url=f"{settings.backend_api_prefix}/static/images/fastapi-favicon.png",
+    #     with_google_fonts=False,
+    # )
     return get_redoc_html(
-        openapi_url=f"{settings.backend_api_prefix}/openapi.json",
+        openapi_url="/openapi.json",
         title=app.title + " - ReDoc",
-        redoc_js_url=f"{settings.backend_api_prefix}/static/js/redoc.standalone.js",
-        redoc_favicon_url=f"{settings.backend_api_prefix}/static/images/fastapi-favicon.png",
+        redoc_js_url="/static/js/redoc.standalone.js",
+        redoc_favicon_url="/static/images/fastapi-favicon.png",
         with_google_fonts=False,
     )
 

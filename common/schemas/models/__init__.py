@@ -19,6 +19,7 @@ from .base import (
     PhoneOptionalSchema,
     PhoneSchema,
 )
+from .categories import CategoryModel
 from .devices import DeviceModel
 from .files import FileModel
 from .jwt import JwtTokenInfoModel, JwtTokenModel
@@ -40,6 +41,7 @@ from .users import (
 
 __all__ = [
     "BaseModelType",
+    "CategoryModel",
     "CustomBool",
     "CustomBoolOrNone",
     "CustomDateOrNone",

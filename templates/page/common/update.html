@@ -1,0 +1,17 @@
+{% block content %}
+<div class="container-fluid mx-auto">
+    <div class="row d-flex justify-content-center">
+        <div class="alert alert-danger d-none"></div>
+        <div class="col-xl-8 col-lg-8 col-md-9 col-11">
+            {% include "page/common/blocks/_form.html" %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script src="/static/js/common.js"></script>
+{% if java_script %}
+    <script src="/static/js/{{ java_script }}"></script>
+{% endif %}
+{% endblock %}

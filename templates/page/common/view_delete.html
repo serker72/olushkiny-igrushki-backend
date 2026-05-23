@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <div class="overflow-auto">
+        <a class="btn btn-sm btn-secondary mt-3 mb-3" href="{{ session['GreBaseView.index.url'] }}">
+            {{ titles.links.page_index }}
+        </a>
+        <button class="btn btn-sm btn-danger mt-3 mb-3 entity-delete-button"
+                data-url="{{ url_for(delete_url, entity_id=item.id) }}"
+                data-url-index="{{ session['GreBaseView.index.url'] }}"
+        >
+            {{ titles.buttons.button_delete }}
+        </button>
+        <div class="alert alert-danger entity-delete-alert-danger d-none">
+            <p>{{ titles.headers.page_delete }} не выполнено.</p>
+            <span class="entity-delete-alert-danger-message"></span>
+        </div>
+        <div class="alert alert-success entity-delete-alert-success d-none">
+            <p>{{ titles.headers.page_delete }} выполнено успешно.</p>
+        </div>
+        <h2 class="h2">
+            <span>{{ titles.headers.page_delete }} # {{ item.id }}</span>
+        </h2>
+        {% include "common/blocks/_view.html" %}
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script src="/js/common.js"></script>
+    {% if java_script %}
+        <script src="/js/{{ java_script }}"></script>
+    {% endif %}
+{% endblock %}

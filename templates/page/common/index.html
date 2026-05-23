@@ -1,0 +1,88 @@
+{% if not is_partial_template %}
+{% extends "page/base.html" %}
+{% endif %}
+
+{% block content %}
+<div class="list-page-wrapper">
+    <div class="row {% if not is_partial_template %}mt-2{% endif %}">
+        <div class="col-12">
+            <h4 class="h4">
+                <span>{{ titles.headers.page_index }}</span>
+                {% if is_created %}
+                <button
+                        class="btn btn-sm btn-outline-success modal-open-create create-object"
+                        data-url="{{ create_page_url }}"
+                        data-submit-url="{{ create_api_url }}"
+                        data-index-url="{% if is_partial_template %}{{ parent_entity_view_and_update_page_url }}{% else %}{{ list_page_url }}{% endif %}"
+                        data-modal-header="{{ titles.headers.page_create }}"
+                >
+                    {{ titles.buttons.button_create }}
+                </button>
+                {% endif %}
+                {% if is_exported %}
+                <button
+                        class="btn btn-sm btn-outline-secondary grid-export"
+                        data-load-url="{{ list_api_url }}"
+                >
+                    {{ titles.buttons.button_export }}
+                </button>
+                {% endif %}
+                {% include template_additional_buttons ignore missing %}
+            </h4>
+        </div>
+    </div>
+    <hr>
+    <div class="grid-wrapper">
+        <div class="row {% if not filter_columns|length or not is_show_filters %}d-none{% endif %}">
+            <div class="col-12 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <span class="h6">Список фильтров</span>
+                            <span class="ms-2 filters-wrapper-collapsed"
+                                    data-target-parent-class="card"
+                                    data-target-class="filters-wrapper"
+                                    title="Изменение видимости списка фильтров"
+                            >
+                                <i class="bi bi-arrows-collapse"></i>
+                                <i class="bi bi-arrows-expand d-none"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body filters-wrapper">
+                        <div class="grid-filters">
+                            {% include "page/common/blocks/_filter.html" %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-body">
+                    <div class="grid-table">
+                        {% include "page/common/blocks/_grid_head.html" %}
+                    </div>
+                    <div class="grid-loader d-flex justify-content-center d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="grid-alert alert alert-danger d-none"></div>
+                    <div class="grid-pagination"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include "page/common/blocks/_modal.html" %}
+{% endblock %}
+
+{% block script %}
+<script src="/static/js/common.js"></script>
+{% if java_script %}
+    <script src="/static/js/{{ java_script }}"></script>
+{% endif %}
+{% endblock %}

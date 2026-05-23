@@ -1,0 +1,40 @@
+{% extends "page/base.html" %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="row">
+                <div class="col-12">
+                    <h4>{{ titles.headers.page_view }}</h4>
+                </div>
+            </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-body form-on-page-wrapper">
+                    <div class="row">
+                        <div class="col-8 text-start">
+                            <a class="cbw" href="{{ list_page_url }}">
+                                <button class="btn btn-sm btn-outline-dark">{{ titles.headers.page_index }}</button>
+                            </a>
+                        </div>
+
+                        <div class="col-4 text-end">
+                            ID # {{ item.id }}
+                        </div>
+
+                        {% include "page/common/blocks/_view.html" %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% include "page/common/blocks/_modal.html" %}
+{% endblock %}
+
+{% block script %}
+    <script src="/static/js/common.js"></script>
+    {% if java_script %}
+        <script src="/static/js/{{ java_script }}"></script>
+    {% endif %}
+{% endblock %}

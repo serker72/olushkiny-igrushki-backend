@@ -1,0 +1,53 @@
+{% if column.col_type == 'boolean' %}
+    {% if item|attr(column.field) is none %}
+        -
+    {% elif item|attr(column.field) is sameas true %}
+        <i class="bi bi-check text-success"></i>
+    {% else %}
+        <i class="bi bi-x text-danger"></i>
+    {% endif %}
+{% elif column.col_type == 'currency' %}
+    {% if item|attr(column.field) %}
+        {{ item|attr(column.field)|format_currency }}
+    {% endif %}
+{% elif column.col_type == 'date' %}
+    {% if item|attr(column.field) %}
+        {{ item|attr(column.field)|format_date }}
+    {% endif %}
+{% elif column.col_type == 'datetime' %}
+    {% if item|attr(column.field) %}
+        {{ item|attr(column.field)|format_datetime }}
+    {% endif %}
+{% elif column.col_type == 'enum' %}
+    {{ (item|attr(column.field)).value }}
+{% elif column.col_type == 'relation' %}
+    {{ (item|attr(column.foreign_field))|attr(column.related_field) }}
+{% elif column.col_type == 'virtual' %}
+    {{ column.content|virtual_column(item) }}
+{% elif column.col_type == 'virtual_with_context' %}
+    {{ column.content|virtual_column_with_context }}
+{% elif column.col_type == 'json_in_modal' %}
+    {% if item|attr(column.field) %}
+        <button class="btn btn-sm btn-outline-danger modal-open-create view-object"
+                {% if column.modal_header %}
+                data-modal-header="{{ column.modal_header|virtual_column_with_context }}"
+                {% else %}
+                data-modal-header="Просмотр данных в формате JSON (ID: {{ item|attr('id') }})"
+                {% endif %}
+                data-modal-body="<pre class='code'>{{ item|attr(column.field)|pretty_json }}</pre>"
+        >
+            Просмотр JSON
+        </button>
+    {% else %}
+        -
+    {% endif %}
+{% elif column.col_type == 'json' %}
+    <pre class="code">{{ item|attr(column.field)|pretty_json }}</pre>
+{% else %}
+{#    {% if not item|attr(column.field) %}#}
+    {% if item|attr(column.field) is none %}
+        -
+    {% else %}
+        {{ item|attr(column.field) }}
+    {% endif %}
+{% endif %}

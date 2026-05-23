@@ -3,6 +3,8 @@ from __future__ import annotations
 import importlib.util
 from collections import Counter, defaultdict
 from inspect import stack
+from itertools import groupby
+from operator import itemgetter
 from typing import Any, Callable, Sequence, Type, TypeVar
 from uuid import UUID, uuid4
 
@@ -30,7 +32,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import InstrumentedAttribute, Session
 from sqlalchemy.schema import Sequence as SASequence
-from sqlalchemy.sql.elements import BinaryExpression
+from sqlalchemy.sql.elements import BinaryExpression, ColumnElement
 from sqlalchemy_utils import Ltree
 
 from common.exceptions import (
@@ -196,11 +198,22 @@ class BaseService(BaseObject):
         is_raise_exception: bool = True,
         orders: list = None,
         exception_class: Type[BackendException] = NotFoundException,
+        is_lock_for_update: bool = False,
+        joins: list[ModelJoinItem] = None,
     ) -> BaseType | None:
         """Получение объекта указанного класса модели по списку фильтров"""
         statement = select(entity_model).where(*filters)
+
+        if isinstance(joins, list) and len(joins) > 0:
+            for join_item in joins:
+                statement = statement.join(**join_item.__dict__)
+
         if orders is not None:
             statement = statement.order_by(*orders)
+
+        if is_lock_for_update:
+            statement = statement.with_for_update()
+
         statement_result = await self.session.execute(statement)
         entity = statement_result.scalar()
 
@@ -210,7 +223,7 @@ class BaseService(BaseObject):
         return entity
 
     async def get_entities(
-        self, entity_model: Type[Base], filters: list[BinaryExpression] = None
+        self, entity_model: Type[Base], filters: list[BinaryExpression] = None, joins: list[ModelJoinItem] = None
     ) -> Sequence[BaseType]:
         """Получение списка объектов указанного класса модели по списку фильтров"""
         filters = filters or []
@@ -219,8 +232,66 @@ class BaseService(BaseObject):
         if len(filters) > 0:
             statement = statement.where(*filters)
 
+        if isinstance(joins, list) and len(joins) > 0:
+            for join_item in joins:
+                statement = statement.join(**join_item.__dict__)
+
         statement_result = await self.session.execute(statement)
         return statement_result.scalars().all()
+
+    async def get_dictionary_items(
+        self,
+        model_class: Type[BaseType],
+        field_id: str | ColumnElement = "id",
+        field_title: str | ColumnElement = "name",
+        as_list_of_tuples: bool = False,
+        filters: list[BinaryExpression] = None,
+        joins: list[ModelJoinItem] = None,
+        field_group: str | ColumnElement = None,
+        group_items: dict = None,
+    ) -> dict | list[tuple]:
+        """Получение записей справочника"""
+        group_items = group_items or {}
+        attr_id = getattr(model_class, field_id) if isinstance(field_id, str) else field_id
+        attr_title = getattr(model_class, field_title) if isinstance(field_title, str) else field_title
+        columns = [attr_id, attr_title]
+        orders = [attr_title]
+
+        if field_group is not None:
+            attr_group = getattr(model_class, field_group) if isinstance(field_group, str) else field_group
+            columns.append(attr_group)
+            orders = [attr_group, attr_title]
+
+        statement = select(*columns).order_by(*orders)
+
+        if isinstance(filters, list) and len(filters) > 0:
+            statement = statement.where(*filters)
+
+        if isinstance(joins, list) and len(joins) > 0:
+            for join_item in joins:
+                statement = statement.join(**join_item.__dict__)
+
+        statement_result = await self.session.execute(statement)
+        rows = statement_result.mappings().all()
+
+        if as_list_of_tuples:
+            return (
+                {
+                    group_items.get(k, k): [(item[field_id], item[field_title]) for item in list(g)]
+                    for k, g in groupby(rows, key=itemgetter(field_group))
+                }
+                if field_group is not None
+                else [(item[field_id], item[field_title]) for item in rows]
+            )
+
+        return (
+            {
+                group_items.get(k, k): [{item[field_id]: item[field_title]} for item in list(g)]
+                for k, g in groupby(rows, key=itemgetter(field_group))
+            }
+            if field_group is not None
+            else {item[field_id]: item[field_title] for item in rows}
+        )
 
     async def get_existing_entity_ids(
         self, entity_model: Type[Base], entity_ids: list[int], model_field: str = "id"
@@ -382,6 +453,10 @@ class BaseModelService(BaseService):
     is_change_state_event_registration: bool = True
     is_delete_event_registration: bool = True
     is_physical_delete: bool = False
+
+    parent_entity_model_class: Type[Base] = None
+    parent_entity_id: int | UUID = None
+    parent_entity: Base = None
 
     # _module_states: dict[str, ModuleState] = None
     # _other_module_states: dict[str, dict[str, ModuleState]] = None
@@ -779,11 +854,23 @@ class BaseModelService(BaseService):
         for unique_fields in entity_unique_fields:
             filters = []
             for field in unique_fields:
+                attr = getattr(self.model_class, field)
                 value = getattr(data, field, None)
-                if value is None and not self.model_class.__mapper__.columns[field].nullable:
-                    filters.append(getattr(self.model_class, field).is_(None))
+
+                attr_check_method = f"entity_check_unique_{field}"
+                if hasattr(self, attr_check_method):
+                    method = getattr(self, attr_check_method)
+                    attr_filters = await execute_function(method, attr, value)
+                    if isinstance(attr_filters, list):
+                        filters.extend(attr_filters)
+                    else:
+                        filters.append(attr_filters)
+
+                # if value is None and not self.model_class.__mapper__.columns[field].nullable:
+                elif value is None:
+                    filters.append(attr.is_(None))
                 elif value is not None:
-                    filters.append(getattr(self.model_class, field) == value)
+                    filters.append(attr == value)
 
             statement = select(label("cnt", func.count(self.model_class.id)))
 
@@ -1219,6 +1306,15 @@ class BaseModelService(BaseService):
         await self.commit_and_refresh_entity()
 
         return entity_data
+
+    async def load_parent_entity(self) -> None:
+        """Загрузка родительского объекта"""
+        if (
+            self.parent_entity_id
+            and self.parent_entity_model_class
+            and (not self.parent_entity or self.parent_entity.id != self.parent_entity_id)
+        ):
+            self.parent_entity = await self.get_entity(self.parent_entity_model_class, self.parent_entity_id)
 
     ###############################
 

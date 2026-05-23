@@ -1,4 +1,5 @@
 from .base import BaseService
+from .categories import CategoryService
 from .devices import DeviceService
 from .files import FileService, UserFileService
 from .modules import ModuleService
@@ -10,6 +11,7 @@ from .users import UserService
 
 __all__ = [
     "BaseService",
+    "CategoryService",
     "DeviceService",
     "FileService",
     "ModuleService",

@@ -6,6 +6,7 @@ from .base import (
     BaseRetrieveRequest,
     BaseUpdateRequest,
 )
+from .categories import CategoryCreateRequest, CategoryRetrieveCollectionRequest, CategoryUpdateRequest
 from .devices import DeviceCreateRequest
 from .files import FileDeleteMultipleRequest, FileDeleteRequest, FileUploadRequest
 from .user_devices import UserDeviceCreateRequest
@@ -27,6 +28,9 @@ __all__ = [
     "BaseRetrieveCollectionRequest",
     "BaseRetrieveRequest",
     "BaseUpdateRequest",
+    "CategoryCreateRequest",
+    "CategoryRetrieveCollectionRequest",
+    "CategoryUpdateRequest",
     "DeviceCreateRequest",
     "FileDeleteMultipleRequest",
     "FileDeleteRequest",

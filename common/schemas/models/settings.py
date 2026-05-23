@@ -58,12 +58,12 @@ class BackendSettings(BaseSettings):
     # postgres
     postgres_host: str = Field("localhost")
     postgres_port: int = Field(5432)
-    postgres_db: str = Field("levelcraft")
-    postgres_user: str = Field("levelcraft")
-    postgres_password: str = Field("levelcraft")
-    postgres_test_db: str = Field("levelcraft_test")
-    postgres_test_user: str = Field("levelcraft_test")
-    postgres_test_password: str = Field("levelcraft")
+    postgres_db: str = Field("olushkiny_igrushki")
+    postgres_user: str = Field("olushkiny_igrushki")
+    postgres_password: str = Field("olushkiny_igrushki")
+    postgres_test_db: str = Field("olushkiny_igrushki_test")
+    postgres_test_user: str = Field("olushkiny_igrushki_test")
+    postgres_test_password: str = Field("olushkiny_igrushki")
 
     # minio
     minio_host: str = Field("localhost")
@@ -79,12 +79,15 @@ class BackendSettings(BaseSettings):
     authjwt_algorithm: str = Field("RS512", description="Алгоритм подписи JWT")
     authjwt_access_token_expires: int = Field(3600, description="Срок действия access токена в секундах")
     authjwt_refresh_token_expires: int = Field(86400, description="Срок действия refresh токена в секундах")
-    authjwt_token_location: list[str] = Field(["cookies", "headers"], description="Местоположение токена JWT")
+    # authjwt_token_location: list[str] = Field(["cookies", "headers"], description="Местоположение токена JWT")
+    authjwt_token_location: list[str] = Field(["cookies"], description="Местоположение токена JWT")
     authjwt_cookie_csrf_protect: bool = Field(True, description="Флаг использования CSRF токена для защиты cookies")
     authjwt_cookie_domain: str | None = Field(None, description="Домен cookies")
     authjwt_cookie_secure: bool = Field(True, description="Флаг использования HTTPS протокола для передачи cookies")
-    authjwt_access_cookie_key: str = Field("levelcraft_access_token", description="Имя cookie для access_token")
-    authjwt_refresh_cookie_key: str = Field("levelcraft_refresh_token", description="Имя cookie для refresh_token")
+    authjwt_access_cookie_key: str = Field("olushkiny_igrushki_access_token", description="Имя cookie для access_token")
+    authjwt_refresh_cookie_key: str = Field(
+        "olushkiny_igrushki_refresh_token", description="Имя cookie для refresh_token"
+    )
 
     # smtp
     smtp_host: str = Field(None)
@@ -102,7 +105,7 @@ class BackendSettings(BaseSettings):
     task_lock_timeout: int = Field(300, description="Время блокировки задачи в секундах")
 
     # backend
-    backend_system_name: str = Field("LevelCraft", description="Имя сервиса")
+    backend_system_name: str = Field("Олюшкины игрушки", description="Имя сервиса")
     backend_server_name: str = Field("prod", description="Имя сервера")
     backend_base_url: str = Field("http://localhost:8000", description="Основной URL")
     backend_api_prefix: str = Field("/api/v1", description="Префикс")
@@ -110,6 +113,9 @@ class BackendSettings(BaseSettings):
     backend_page_size: int = Field(10, description="Количество записей на странице")
     backend_min_page_size: int = Field(5, description="Минимальное количество записей на странице")
     backend_max_page_size: int = Field(100, description="Максимальное количество записей на странице")
+    backend_page_sizes: list[int] = Field(
+        [5, 10, 15, 20, 25, 30, 50, 100], title="Список допустимых значений количества записей на странице"
+    )
     backend_password_salt: str = Field("backend_password_salt", description="Соль для генерации пароля")
     backend_password_secret_key: str = Field(
         "backend_password_secret_key", description="Секретный ключ для генерации пароля"
@@ -131,6 +137,8 @@ class BackendSettings(BaseSettings):
     backend_static_path: str = Field(description="Каталог хранения статических файлов")
     backend_key_pair_path: str = Field(description="Каталог хранения ключей сервера")
     backend_private_key_password: str | None = Field(description="Пароль приватного ключа сервера")
+    backend_csrf_protec_secret_key: str = Field(description="Секретный ключ для CSRF")
+    backend_secret_key: str = Field(description="Секретный ключ для сессии")
 
     ##### confirmation_code #####
     backend_user_confirmation_code_length: int = Field(6, description="Количество цифр в коде подтверждения")
