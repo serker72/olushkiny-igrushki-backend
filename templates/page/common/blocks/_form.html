@@ -1,0 +1,19 @@
+<form class="mt-3" method="post" action="">
+    {{ form.csrf_token }}
+    {% for field in form %}
+        {% if field.name not in ['csrf_token'] %}
+            <div class="mt-3">
+                {{ field.label(class_="label-text") }}
+                {{ field }}
+                {% if field.description %}
+                    <div class="form-text">{{ field.description|safe }}</div>
+                {% endif %}
+                {% if field.errors %}
+                    {% for error in field.errors %}
+                        <li style="color: red;">{{ error }}</li>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endif %}
+    {% endfor %}
+</form>

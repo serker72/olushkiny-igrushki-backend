@@ -11,7 +11,7 @@ class UserSignInResponse(BaseModel):
     """Схема ответа с данными авторизации пользователя"""
 
     user: UserModel = Field(description="Данные пользователя")
-    access_token: JwtTokenModel = Field(description="Данные JWT access токена")
+    access_token: JwtTokenModel | JwtTokenInfoModel = Field(description="Данные JWT access токена")
     refresh_token: JwtTokenInfoModel = Field(description="Данные JWT refresh токена")
 
 

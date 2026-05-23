@@ -68,6 +68,7 @@ class BaseRetrieveCollectionRequest(BaseModel):
     sort: str | None = Field(default=None, description="Список полей для сортировки")
     page: CustomIntOrNone = Field(default=1, description="Номер страницы")
     limit: CustomIntOrNone = Field(default=settings.backend_page_size, description="Количество объектов на странице")
+    is_export: bool | None = Field(False, description="Флаг экспорта")
     image_format: str | None = Field(default=None, description="Формат изображения")
     image_width: CustomIntOrNone = Field(default=None, description="Ширина изображения")
     image_height: CustomIntOrNone = Field(default=None, description="Высота изображения")

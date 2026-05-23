@@ -1,0 +1,102 @@
+{% if filter_columns|length %}
+    <!--script>
+        let select2_filters = {}
+    </script-->
+    <div class="table-responsive mt-3">
+        <div class="row mb-3">
+            <div class="col-10">
+                <div class="row">
+                    {% for column in filter_columns %}
+                        {% with filter_value = filter_values.get(column.field) %}
+                            {% if filter_value and column.is_filter_multiple %}
+                                <!--script>
+                                    select2_filters['{{ column.field }}'] = [{% for v in filter_value %}'{{ v }}'{{ ', ' if not loop.last else '' }}{% endfor %}]
+                                </script-->
+                            {% endif %}
+
+                            {% if column.col_type in ['datetime', 'date'] %}
+                                <div class="col-4 list-filter mb-3">
+                                    <label class="form-check-label" for="{{ column.field }}_start">{{ column.title }}
+                                        (Начало периода)</label>
+                                    <input type="date{% if column.col_type == 'datetime' %}time-local{% endif %}"
+                                           class="form-control"
+                                           id="{{ column.field }}_start"
+                                           value="{{ filter_value }}"
+                                           data-filter="{{ column.field }}_start"
+                                    >
+                                </div>
+
+                                <div class="col-4 list-filter mb-3">
+                                    <label class="form-check-label" for="{{ column.field }}_end">{{ column.title }}
+                                        (Окончание периода)</label>
+                                    <input type="datetime-local"
+                                           class="form-control"
+                                           id="{{ column.field }}_end"
+                                           value="{{ filter_value }}"
+                                           data-filter="{{ column.field }}_end"
+                                    >
+                                </div>
+                            {% elif column.field == 'custom_search_string' %}
+                                <div class="col-4 list-filter mb-3">
+                                    <label class="form-check-label" for="{{ column.field }}">{{ column.title }}</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="{{ column.field }}"
+                                           value={% if filter_value and filter_value != 'None' %}{{ filter_value }}{% else %}""{% endif %}
+                                           placeholder="Введите текст для поиска"
+                                           data-filter="{{ column.field }}"
+                                    >
+                                </div>
+                            {% elif column.filter_items|length > 0 %}
+                                <div class="col-4 list-filter mb-3">
+                                    <label class="form-check-label" for="{{ column.field }}">{{ column.title }}</label>
+                                    <select
+                                            class="form-select sel2"
+                                            {% if column.is_filter_multiple %}multiple="multiple"{% endif %}
+                                    id="{{ column.field }}"
+                                    data-filter="{{ column.field }}"
+                                    >
+                                    {% if not column.is_filter_multiple %}
+                                        <option value="" {% if not filter_value %}selected="selected"{% endif %}>
+                                            Все
+                                        </option>
+                                    {% endif %}
+
+                                    {% for k, v in column.filter_items.items() %}
+                                        <option value="{{ k }}"
+                                                {% if filter_value and not column.is_filter_multiple and k|string == filter_value|string %}
+                                                selected="selected"
+                                                {% endif %}
+                                        >
+                                            {{ v }}
+                                        </option>
+                                    {% endfor %}
+                                    </select>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="d-grid gap-2 col-2 mx-auto">
+                <button
+                        type="button"
+                        class="btn btn-sm btn-outline-success list-filter-apply-button"
+                        title="Применить фильтры"
+                        data-url="{{ list_api_url }}"
+                >
+                    Применить фильтры
+                </button>
+
+                <button
+                        type="button"
+                        class="btn btn-sm btn-outline-dark mt-2 list-filter-clear-button"
+                        title="Очистить фильтры"
+                        data-url="{{ list_api_url }}"
+                >
+                    Очистить фильтры
+                </button>
+            </div>
+        </div>
+    </div>
+{% endif %}

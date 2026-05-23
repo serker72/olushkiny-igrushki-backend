@@ -132,3 +132,12 @@ APPLICATION_CODE_QUEUE_PROCESSING = "queue_processing"
 
 # RabbitMQ Queue Names
 RABBITMQ_QUEUE_EMAIL_MESSAGES = "email_messages"
+
+# Form messages
+FORM_FIELD_REQUIRED_MESSAGE = "Это поле является обязательным."
+FORM_FIELD_JSON_SCHEMA_MISSING_MESSAGE = "Значение поля не соответствует схеме JSON."
+FORM_FIELD_REGEXP_MISSING_MESSAGE = "Значение поля не соответствует регулярному выражению"
+FORM_FIELD_MIN_LENGTH_MESSAGE = "Количество символов в значении поля - %(min)."
+FORM_FIELD_MAX_LENGTH_MESSAGE = "Количество символов в значении поля - %(max)."
+FORM_FIELD_MIN_AND_MAX_LENGTH_MESSAGE = "Количество символов в значении поля - от %(min) до %(max)."
+FORM_FIELD_MIN_AND_MAX_MESSAGE = "Значение поля должно быть в интервале от %(min)s до %(max)s."

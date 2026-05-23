@@ -1,0 +1,24 @@
+<div class="table-responsive">
+    <table
+            class="table table-hover data-sortable"
+            data-load-url="{{ list_api_url }}"
+            data-sort-col="{{ order }}"
+            data-sort-direction="{{ direction }}"
+            data-total="0"
+    >
+        <thead>
+        <tr>
+            {% for column in columns %}
+                <th {% if column.is_sorted %}role="button" data-sort-col="{{ column.field }}"{% endif %}>
+                    {{ column.title|safe }}
+                </th>
+            {% endfor %}
+            {% if is_updated or is_view or is_view_and_updated or is_deleted %}
+                <th>Управление</th>
+            {% endif %}
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,69 @@
+<div class="row mt-2">
+    <div class="col-sm-12 col-md-5">
+        <div class="" role="status">
+        {% if pagination.total > 0 %}
+            Записи с {{ pagination.page_first_item }} по {{ pagination.page_last_item }} из {{ pagination.total }}
+            <div class="col-sm-12 col-md-4">
+                <select class="form-select pagination-page-size">
+                    {% for page_size in settings.backend_page_sizes %}
+                        <option value="{{ page_size }}"{% if page_size == pagination.limit %} selected{% endif %}>{{ page_size }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% else %}
+            Записи отсутствуют
+        {% endif %}
+        </div>
+    </div>
+    <div class="col-sm-12 col-md-7">
+        {% if pagination.total_pages > 1 %}
+            <nav>
+                <ul class="pagination justify-content-end">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="#" tabindex="-1"
+                           {% if not pagination.has_prev %}aria-disabled="true" {% else %}data-page="1"{% endif %}
+                        >
+                            |<
+                        </a>
+                    </li>
+
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="#" tabindex="-1"
+                           {% if not pagination.has_prev %}aria-disabled="true" {% else %}data-page="{{ pagination.page_prev }}"{% endif %}
+                        >
+                            <<
+                        </a>
+                    </li>
+
+                    {% for page in pagination.pages %}
+                        {% if page %}
+                            <li class="page-item {% if page == pagination.page %}active" aria-current="page{% endif %}">
+                                <a class="page-link" href="#" data-page="{{ page }}">{{ page }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled" tabindex="-1">
+                                <a class="page-link" href="#" aria-disabled="true">...</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="#"
+                           {% if not pagination.has_next %}aria-disabled="true" {% else %}data-page="{{ pagination.page_next }}"{% endif %}
+                        >
+                            >>
+                        </a>
+                    </li>
+
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="#"
+                           {% if not pagination.has_next %}aria-disabled="true" {% else %}data-page="{{ pagination.total_pages }}"{% endif %}
+                        >
+                            >|
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>

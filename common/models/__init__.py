@@ -1,4 +1,5 @@
 from .base import Base, BaseType, BaseWithPhoto, BaseWithPhotos, BaseWithState, ModelJoinItem
+from .categories import Category
 from .devices import Device
 from .email_messages import EmailMessage
 from .files import File
@@ -15,6 +16,7 @@ __all__ = [
     "BaseWithPhoto",
     "BaseWithPhotos",
     "BaseWithState",
+    "Category",
     "Device",
     "EmailMessage",
     "File",
