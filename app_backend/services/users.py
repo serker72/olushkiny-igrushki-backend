@@ -34,11 +34,6 @@ class UserService(BaseModelService):
     model_class = User
     schemas = {"update": UserRetrieveResponse}
 
-    is_create_event_registration = False
-    is_update_event_registration = False
-    is_change_state_event_registration = False
-    is_delete_event_registration = False
-
     @task_lock("save_user_list_to_cache")
     async def save_user_list_to_cache(self):
         """Сохранение списка пользователей в кеше Redis"""

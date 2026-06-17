@@ -39,11 +39,6 @@ class UserAuthorizationCodeService(BaseModelService):
     model_class = UserAuthorizationCode
     model_status_class = UserAuthorizationCodeStatuses
 
-    is_create_event_registration = False
-    is_update_event_registration = False
-    is_change_state_event_registration = False
-    is_delete_event_registration = False
-
     template_event_code: str = "user_sign_in_request_code"
 
     @staticmethod

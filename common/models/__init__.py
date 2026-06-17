@@ -5,6 +5,9 @@ from .email_messages import EmailMessage
 from .files import File
 from .module_states import ModuleState
 from .modules import Module
+from .product_properties import ProductProperty
+from .products import Product
+from .properties import Property
 from .user_authorization_codes import UserAuthorizationCode
 from .user_devices import UserDevice
 from .user_registration_codes import UserRegistrationCode
@@ -23,6 +26,9 @@ __all__ = [
     "ModelJoinItem",
     "Module",
     "ModuleState",
+    "Product",
+    "ProductProperty",
+    "Property",
     "User",
     "UserAuthorizationCode",
     "UserDevice",

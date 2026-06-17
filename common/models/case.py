@@ -272,3 +272,51 @@ class CategoryCase(Case):
     plural_accusative = "Категории"
     plural_instrumental = "Категориями"
     plural_prepositional = "Категориях"
+
+
+class ProductCase(Case):
+    nominative = "Товар"
+    genitive = "Товара"
+    dative = "Товару"
+    accusative = "Товар"
+    instrumental = "Товаром"
+    prepositional = "Товаре"
+
+    plural_nominative = "Товары"
+    plural_genitive = "Товаров"
+    plural_dative = "Товарам"
+    plural_accusative = "Товары"
+    plural_instrumental = "Товарами"
+    plural_prepositional = "Товарах"
+
+
+class PropertyCase(Case):
+    nominative = "Свойство"
+    genitive = "Свойства"
+    dative = "Свойству"
+    accusative = "Свойство"
+    instrumental = "Свойством"
+    prepositional = "Свойстве"
+
+    plural_nominative = "Свойства"
+    plural_genitive = "Свойств"
+    plural_dative = "Свойствам"
+    plural_accusative = "Свойства"
+    plural_instrumental = "Свойствами"
+    plural_prepositional = "Свойствах"
+
+
+class ProductPropertyCase(Case):
+    nominative = "Свойство товара"
+    genitive = "Свойства товара"
+    dative = "Свойству товара"
+    accusative = "Свойство товара"
+    instrumental = "Свойством товара"
+    prepositional = "Свойстве товара"
+
+    plural_nominative = "Свойства товаров"
+    plural_genitive = "Свойств товаров"
+    plural_dative = "Свойствам товаров"
+    plural_accusative = "Свойства товаров"
+    plural_instrumental = "Свойствами товаров"
+    plural_prepositional = "Свойствах товаров"

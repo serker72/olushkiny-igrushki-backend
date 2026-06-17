@@ -3,6 +3,7 @@
   "exception_code_not_found": "Ошибка с кодом '${code}' не обнаружена",
   "invalid_request_data_format": "Неверный формат данных запроса",
   "invalid_request_data_format_with_reason": "Неверный формат данных запроса: ${reason}",
+  "invalid_form_field_values": "Неверные значения полей формы",
   "class_not_implemented": "Класс '${class_name}' не реализован",
   "class_method_not_implemented": "Метод '${method_name}' класса '${class_name}' не реализован",
   "class_property_is_not_specified": "Значение свойства '${property_name}' класса '${class_name}' не указано",

@@ -280,6 +280,7 @@ class BaseUIRouter(BaseRouter):
         )
         return {
             "request": request,
+            "prefix": self.prefix,
             "java_script": self.java_script,
             "settings": object_to_dict(self.settings),
             "titles": self.get_titles() if self.model_class else {},

@@ -25,6 +25,7 @@ from .files import FileModel
 from .jwt import JwtTokenInfoModel, JwtTokenModel
 from .module_states import ModuleStateModel
 from .modules import ModuleModel
+from .properties import PropertyModel
 from .settings import BackendSettings
 from .user_devices import UserDeviceModel
 from .users import (
@@ -66,6 +67,7 @@ __all__ = [
     "ModuleStateModel",
     "PhoneOptionalSchema",
     "PhoneSchema",
+    "PropertyModel",
     "BackendSettings",
     "UserDeviceModel",
     "UserAuthorizationCodeModel",

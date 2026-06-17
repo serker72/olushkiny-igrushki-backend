@@ -12,3 +12,4 @@ venv
 .env.docker
 .env.loc
 .queues.json
+config_services/pgbouncer/userlist.txt
