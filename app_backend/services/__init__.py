@@ -3,6 +3,7 @@ from .categories import CategoryService
 from .devices import DeviceService
 from .files import FileService, UserFileService
 from .modules import ModuleService
+from .properties import PropertyService
 from .systems import SystemService
 from .user_authorization_codes import UserAuthorizationCodeService
 from .user_devices import UserDeviceService
@@ -15,6 +16,7 @@ __all__ = [
     "DeviceService",
     "FileService",
     "ModuleService",
+    "PropertyService",
     "SystemService",
     "UserAuthorizationCodeService",
     "UserDeviceService",

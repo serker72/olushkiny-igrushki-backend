@@ -7,6 +7,7 @@ from .categories import CategoryUIRouter
 from .dashboard import DashboardUIRouter
 from .files import FileRouter
 from .modules import ModuleRouter
+from .properties import PropertyUIRouter
 from .systems import SystemRouter
 from .users import UserRouter
 
@@ -18,6 +19,7 @@ __all__ = [
     "DashboardUIRouter",
     "FileRouter",
     "ModuleRouter",
+    "PropertyUIRouter",
     "SystemRouter",
     "UserRouter",
 ]

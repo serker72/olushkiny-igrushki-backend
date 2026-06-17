@@ -64,6 +64,14 @@ from common.schemas.requests import (
 )
 
 
+class UniqueLowerNameMixin:
+    """Миксин добавления проверки уникальности на основе выражения `lower(name)`"""
+
+    async def entity_check_unique_name(self, attr: Column, value: str) -> BinaryExpression:
+        """Проверка уникальности объекта по полю `name`"""
+        return func.lower(attr) == value.lower()
+
+
 class ServiceManager(BaseObject):
     """Класс менеджера сервисов"""
 
@@ -448,10 +456,10 @@ class BaseModelService(BaseService):
 
     is_collection_paginate: bool = True
     is_ignore_similar_state: bool = False
-    is_create_event_registration: bool = True
-    is_update_event_registration: bool = True
-    is_change_state_event_registration: bool = True
-    is_delete_event_registration: bool = True
+    is_create_event_registration: bool = False
+    is_update_event_registration: bool = False
+    is_change_state_event_registration: bool = False
+    is_delete_event_registration: bool = False
     is_physical_delete: bool = False
 
     parent_entity_model_class: Type[Base] = None

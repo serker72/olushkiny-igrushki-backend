@@ -46,11 +46,6 @@ class FileService(BaseModelService):
 
     model_class = File
 
-    is_create_event_registration = False
-    is_update_event_registration = False
-    is_change_state_event_registration = False
-    is_delete_event_registration = False
-
     is_upload_temporary: bool = False
     field_owner_id: str = "user_id"
     entity_fields: dict[str, EntityFieldAccessControl] = None

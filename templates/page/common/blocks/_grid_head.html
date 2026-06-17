@@ -5,6 +5,7 @@
             data-sort-col="{{ order }}"
             data-sort-direction="{{ direction }}"
             data-total="0"
+            data-limit="{% if not is_partial_template %}{{ filter_values.get('limit') }}{% endif %}"
     >
         <thead>
         <tr>

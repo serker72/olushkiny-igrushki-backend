@@ -1,7 +1,7 @@
 """create table categories
 
 Revision ID: 42d8550a7dad
-Revises: b49c5649f1b6
+Revises: 52294edd1a15
 Create Date: 2026-03-22 12:28:19.317432
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "42d8550a7dad"
-down_revision: Union[str, Sequence[str], None] = "b49c5649f1b6"
+down_revision: Union[str, Sequence[str], None] = "52294edd1a15"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -53,6 +53,14 @@ def upgrade() -> None:
         # ----- Audit fields - End -----
         sa.PrimaryKeyConstraint("id", name=op.f("pk_categories")),
         comment="Список категорий",
+    )
+
+    op.create_foreign_key(
+        op.f("fk_categories_state_id_module_states"),
+        "categories",
+        "module_states",
+        ["state_id"],
+        ["id"],
     )
 
     op.create_foreign_key(

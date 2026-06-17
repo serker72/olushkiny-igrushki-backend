@@ -7,6 +7,7 @@ class ModuleModel(BaseModel):
     id: int = Field(description="ID модуля")
     code: str = Field(description="Код")
     title: str = Field(description="Наименование")
+    is_used_entity_properties: bool = Field(description="Флаг использования свойств объекта")
 
 
 class ModuleShortModel(BaseModel):

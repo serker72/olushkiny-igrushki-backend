@@ -92,7 +92,7 @@ function get_grid_table_load_url_params(el, page, is_export) {
     const direction = $table.data('sort-direction')
     const order = $table.data('sort-col')
     const page_sizes = $grid_pagination.find('.pagination-page-size')
-    const limit = page_sizes.length > 0 ? parseInt($(page_sizes[0]).val()) : 10
+    const limit = $table.data('limit') || page_sizes.length > 0 ? parseInt($table.data('limit') || $(page_sizes[0]).val()) : 10
 
     // console.log('get_grid_table_load_url_params', $table, $grid_wrapper, $table_filters, $table, $grid_pagination)
     // console.log('get_grid_table_load_url_params', direction, order, page)

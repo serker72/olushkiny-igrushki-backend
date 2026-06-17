@@ -1,4 +1,4 @@
-from sqlalchemy import String
+from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import AuditMixin, Base
@@ -11,4 +11,4 @@ class Module(AuditMixin, Base):
 
     code: Mapped[str] = mapped_column(String(), nullable=False)
     title: Mapped[str] = mapped_column(String(), nullable=False)
-    # label: Mapped[str] = mapped_column(String(), nullable=True)
+    is_used_entity_properties: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)

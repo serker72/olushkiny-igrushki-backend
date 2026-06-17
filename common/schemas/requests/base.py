@@ -43,31 +43,9 @@ class BaseDeleteRequest(BaseModel):
 class BaseRetrieveCollectionRequest(BaseModel):
     """Схема базового запроса получения списка объектов"""
 
-    # or_filter_fields: list[str] | None = Field(None, description="Список полей фильтров по условию 'ИЛИ'")
-    # sort: str = Field(
-    #     Query(
-    #         delault="-id",
-    #         default_factory=str,
-    #         description="Список полей для сортировки",
-    #     ),
-    # )
-    # page: int = Field(
-    #     Query(
-    #         delault=1,
-    #         default_factory=int,
-    #         description="Номер страницы",
-    #     ),
-    # )
-    # limit: int = Field(
-    #     Query(
-    #         delault=settings.backend_page_size,
-    #         default_factory=int,
-    #         description="Количество объектов на странице",
-    #     ),
-    # )
     sort: str | None = Field(default=None, description="Список полей для сортировки")
     page: CustomIntOrNone = Field(default=1, description="Номер страницы")
-    limit: CustomIntOrNone = Field(default=settings.backend_page_size, description="Количество объектов на странице")
+    limit: CustomIntOrNone = Field(default=None, description="Количество объектов на странице")
     is_export: bool | None = Field(False, description="Флаг экспорта")
     image_format: str | None = Field(default=None, description="Формат изображения")
     image_width: CustomIntOrNone = Field(default=None, description="Ширина изображения")
